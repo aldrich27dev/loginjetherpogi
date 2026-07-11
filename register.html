@@ -71,7 +71,7 @@
 
         .form-grid {
             display: grid;
-            grid-template-cols: 1fr 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -106,6 +106,46 @@
 
         input:focus, select:focus {
             border-color: var(--primary-color);
+        }
+
+        /* Password Helper Checklist styling */
+        .password-requirements {
+            margin-top: 8px;
+            padding: 10px 12px;
+            background-color: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .requirement {
+            font-size: 11px;
+            color: var(--muted-text);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+            transition: color 0.2s ease;
+        }
+
+        .requirement:last-child {
+            margin-bottom: 0;
+        }
+
+        .requirement.valid {
+            color: var(--success-text);
+            font-weight: bold;
+        }
+
+        .requirement .dot {
+            width: 6px;
+            height: 6px;
+            background-color: #d1d5db;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .requirement.valid .dot {
+            background-color: var(--success-text);
         }
 
         .footer-links {
@@ -184,7 +224,18 @@
             </div>
             <div class="form-group full-width">
                 <label>Account Password</label>
-                <input type="password" id="password" placeholder="••••••••" required>
+                <input type="password" id="password" placeholder="••••••••" 
+                       minlength="8" 
+                       pattern="(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}" 
+                       title="Password must contain at least 8 characters, including 1 uppercase letter, 1 number, and 1 special character." 
+                       required>
+                
+                <div class="password-requirements">
+                    <div id="req-length" class="requirement"><span class="dot"></span> At least 8 characters</div>
+                    <div id="req-uppercase" class="requirement"><span class="dot"></span> At least one uppercase letter (A-Z)</div>
+                    <div id="req-number" class="requirement"><span class="dot"></span> At least one numeric digit (0-9)</div>
+                    <div id="req-special" class="requirement"><span class="dot"></span> At least one special character (@, #, $, !, etc.)</div>
+                </div>
             </div>
         </div>
 
@@ -200,6 +251,33 @@
 <script>
     const form = document.getElementById('registerForm');
     const banner = document.getElementById('msgBanner');
+    const passwordInput = document.getElementById('password');
+
+    // Password realtime status listener checking sequence
+    passwordInput.addEventListener('input', () => {
+        const val = passwordInput.value;
+        
+        // Validation Checks
+        const hasLength = val.length >= 8;
+        const hasUppercase = /[A-Z]/.test(val);
+        const hasNumber = /[0-9]/.test(val);
+        const hasSpecial = /[^A-Za-z0-9]/.test(val);
+
+        // UI Class updates
+        toggleReqClass('req-length', hasLength);
+        toggleReqClass('req-uppercase', hasUppercase);
+        toggleReqClass('req-number', hasNumber);
+        toggleReqClass('req-special', hasSpecial);
+    });
+
+    function toggleReqClass(id, isValid) {
+        const element = document.getElementById(id);
+        if (isValid) {
+            element.classList.add('valid');
+        } else {
+            element.classList.remove('valid');
+        }
+    }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -213,7 +291,7 @@
             yearLevel: document.getElementById('yearLevel').value,
             contactNumber: document.getElementById('contactNumber').value.trim(),
             email: document.getElementById('email').value.trim(),
-            password: document.getElementById('password').value
+            password: passwordInput.value
         };
 
         try {
@@ -230,6 +308,8 @@
                 banner.innerText = data.message;
                 banner.style.display = 'block';
                 form.reset();
+                // Clear checklists styles layout after forms cleanup
+                document.querySelectorAll('.requirement').forEach(el => el.classList.remove('valid'));
                 setTimeout(() => { window.location.href = 'login.html'; }, 2000);
             } else {
                 banner.className = "msg-banner error";
